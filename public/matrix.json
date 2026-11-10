@@ -1,0 +1,507 @@
+{
+  "generatedAt": "2026-11-10T00:29:16.604Z",
+  "generator": "scripts/review.mjs",
+  "buildId": null,
+  "dimensions": [
+    {
+      "id": "measurability",
+      "label": "Measurability",
+      "question": "Can each criterion be checked against a cited source, or is it a vibe?",
+      "weight": 0.25,
+      "citation": "https://crfm.stanford.edu/helm/",
+      "citationLabel": "HELM"
+    },
+    {
+      "id": "coverage",
+      "label": "Coverage",
+      "question": "Does the rubric cover every constraint the prompt states?",
+      "weight": 0.2,
+      "citation": "https://diataxis.fr/",
+      "citationLabel": "Diataxis"
+    },
+    {
+      "id": "discrimination",
+      "label": "Discrimination",
+      "question": "Does the criterion reject a plausible wrong output, or only a broken one?",
+      "weight": 0.25,
+      "citation": "https://arxiv.org/abs/1606.06565",
+      "citationLabel": "Concrete Problems in AI Safety"
+    },
+    {
+      "id": "specificity",
+      "label": "Specificity",
+      "question": "Does the criterion name the evidence it requires?",
+      "weight": 0.15,
+      "citation": "https://www.nist.gov/itl/ai-risk-management-framework",
+      "citationLabel": "NIST AI RMF"
+    },
+    {
+      "id": "calibration",
+      "label": "Calibration",
+      "question": "Do two independent reviewers agree on each criterion?",
+      "weight": 0.15,
+      "citation": "https://en.wikipedia.org/wiki/Cohen%27s_kappa",
+      "citationLabel": "Cohen's kappa"
+    }
+  ],
+  "cases": [
+    {
+      "id": "P1",
+      "prompt": "Write a Python function that validates an email address.",
+      "constraints": [
+        "Returns a boolean",
+        "Rejects malformed input"
+      ],
+      "rubric": [
+        {
+          "id": "C1",
+          "statement": "The response includes a Python function."
+        },
+        {
+          "id": "C2",
+          "statement": "The function returns a boolean."
+        }
+      ],
+      "output": "def validate(email):\n    return True\n",
+      "reviewers": [
+        {
+          "id": "A",
+          "scores": {
+            "C1": "PASS",
+            "C2": "PASS"
+          }
+        },
+        {
+          "id": "B",
+          "scores": {
+            "C1": "PASS",
+            "C2": "PASS"
+          }
+        }
+      ],
+      "shortcutVerdict": "sound",
+      "referenceVerdict": "defective",
+      "defectClass": "vacuous",
+      "fix": {
+        "replace": {
+          "C1": "The function returns False for \"not-an-email\" and True for \"user@example.com\"."
+        },
+        "add": []
+      },
+      "catches": "The output is a stub that returns True for everything. Both reviewers pass it, because C1 \"includes a Python function\" is satisfied by `def validate(email): return True` and C2 \"returns a boolean\" is satisfied by `True`. The rubric grades the scaffold, not the feature. The shortcut says the rubric is sound because the output passed; the meta-rubric says the rubric is defective because C1 would also pass `def f(): pass`."
+    },
+    {
+      "id": "P2",
+      "prompt": "Explain what a database index is to a junior developer.",
+      "constraints": [
+        "Names the operations an index accelerates",
+        "Does not claim every query gets faster"
+      ],
+      "rubric": [
+        {
+          "id": "C1",
+          "statement": "The explanation is clear and engaging."
+        },
+        {
+          "id": "C2",
+          "statement": "The explanation is technically accurate."
+        }
+      ],
+      "output": "Think of an index like the table of contents in a book — it helps you find what you need faster. Every query you run will be quicker with an index, which is why databases use them everywhere.",
+      "reviewers": [
+        {
+          "id": "A",
+          "scores": {
+            "C1": "PASS",
+            "C2": "FAIL"
+          }
+        },
+        {
+          "id": "B",
+          "scores": {
+            "C1": "PASS",
+            "C2": "PASS"
+          }
+        }
+      ],
+      "shortcutVerdict": "sound",
+      "referenceVerdict": "defective",
+      "defectClass": "unmeasurable",
+      "fix": {
+        "replace": {
+          "C1": "The explanation names three specific operations an index accelerates (point lookup, range scan, sort-avoidance) and is at most four sentences.",
+          "C2": "No claim contradicts section \"Indexes\" of the database documentation at the URL cited in the prompt."
+        },
+        "add": []
+      },
+      "catches": "The output claims \"every query will be quicker\", which is false. Reviewer A catches it; Reviewer B does not. That disagreement is not the reviewers' fault: \"technically accurate\" has no cited source, so both reviewers are applying a private standard. \"Clear and engaging\" is worse — no source on Earth could resolve it."
+    },
+    {
+      "id": "P3",
+      "prompt": "Write a SQL query to find the top 10 customers by revenue in 2025. Must use a window function.",
+      "constraints": [
+        "Filters to 2025",
+        "Returns top 10 by revenue",
+        "Must use a window function"
+      ],
+      "rubric": [
+        {
+          "id": "C1",
+          "statement": "The query is syntactically valid SQL."
+        },
+        {
+          "id": "C2",
+          "statement": "The query returns the top 10 customers by revenue."
+        }
+      ],
+      "output": "SELECT customer_id, SUM(revenue) AS total\nFROM orders\nWHERE EXTRACT(YEAR FROM placed_at) = 2025\nGROUP BY customer_id\nORDER BY total DESC\nLIMIT 10;\n",
+      "reviewers": [
+        {
+          "id": "A",
+          "scores": {
+            "C1": "PASS",
+            "C2": "PASS"
+          }
+        },
+        {
+          "id": "B",
+          "scores": {
+            "C1": "PASS",
+            "C2": "PASS"
+          }
+        }
+      ],
+      "shortcutVerdict": "sound",
+      "referenceVerdict": "defective",
+      "defectClass": "coverage-gap",
+      "fix": {
+        "replace": {},
+        "add": [
+          "The query contains a window function (an OVER clause)."
+        ]
+      },
+      "catches": "The output is correct SQL and returns the top 10 customers. It also ignores the third constraint — no window function, just ORDER BY ... LIMIT. Both reviewers pass it, correctly, because the rubric never asks about the window function. The shortcut says the rubric is sound; the meta-rubric says coverage is 0 because a stated constraint is not represented by any criterion."
+    },
+    {
+      "id": "P4",
+      "prompt": "Summarise the attached incident post-mortem in exactly 3 sentences.",
+      "constraints": [
+        "Exactly 3 sentences",
+        "Names the root cause"
+      ],
+      "rubric": [
+        {
+          "id": "C1",
+          "statement": "The summary is concise and captures the key points."
+        }
+      ],
+      "output": "The checkout service experienced elevated latency on 2026-11-02. The incident lasted approximately eight minutes. Service was restored by a rollback.",
+      "reviewers": [
+        {
+          "id": "A",
+          "scores": {
+            "C1": "PASS"
+          }
+        },
+        {
+          "id": "B",
+          "scores": {
+            "C1": "FAIL"
+          }
+        }
+      ],
+      "shortcutVerdict": "sound",
+      "referenceVerdict": "defective",
+      "defectClass": "calibration",
+      "fix": {
+        "replace": {
+          "C1": "The summary is exactly 3 sentences (count sentence-ending punctuation) and names the root cause from section \"Root cause\" of the post-mortem."
+        },
+        "add": []
+      },
+      "catches": "Reviewer A counts sentences: three of them, so PASS. Reviewer B checks information: three sentences but no root cause named, so FAIL. Both are applying the criterion correctly — \"concise and captures the key points\" means two different things. The disagreement is the defect, not the reviewers. The shortcut says the rubric is sound because one reviewer passed it; the meta-rubric says calibration is 0 because the criterion cannot survive two applications."
+    }
+  ],
+  "matrix": [
+    {
+      "caseId": "P1",
+      "prompt": "Write a Python function that validates an email address.",
+      "constraints": [
+        "Returns a boolean",
+        "Rejects malformed input"
+      ],
+      "rubric": [
+        {
+          "id": "C1",
+          "statement": "The response includes a Python function."
+        },
+        {
+          "id": "C2",
+          "statement": "The function returns a boolean."
+        }
+      ],
+      "output": "def validate(email):\n    return True\n",
+      "reviewers": [
+        {
+          "id": "A",
+          "scores": {
+            "C1": "PASS",
+            "C2": "PASS"
+          }
+        },
+        {
+          "id": "B",
+          "scores": {
+            "C1": "PASS",
+            "C2": "PASS"
+          }
+        }
+      ],
+      "shortcutVerdict": "sound",
+      "referenceVerdict": "defective",
+      "referenceDefect": "vacuous",
+      "metaVerdict": "defective",
+      "derivedDefect": "vacuous",
+      "scores": {
+        "measurability": 1,
+        "coverage": 2,
+        "discrimination": 0,
+        "specificity": 1,
+        "calibration": 2
+      },
+      "fix": {
+        "replace": {
+          "C1": "The function returns False for \"not-an-email\" and True for \"user@example.com\"."
+        },
+        "add": []
+      },
+      "catches": "The output is a stub that returns True for everything. Both reviewers pass it, because C1 \"includes a Python function\" is satisfied by `def validate(email): return True` and C2 \"returns a boolean\" is satisfied by `True`. The rubric grades the scaffold, not the feature. The shortcut says the rubric is sound because the output passed; the meta-rubric says the rubric is defective because C1 would also pass `def f(): pass`.",
+      "rejectsShortcut": true,
+      "matchesReference": true,
+      "note": "Defective rubric (vacuous): at least one dimension is 0. The output is a stub that returns True for everything. Both reviewers pass it, because C1 \"includes a Python function\" is satisfied by `def validate(email): return True` and C2 \"returns a boolean\" is satisfied by `True`. The rubric grades the scaffold, not the feature. The shortcut says the rubric is sound because the output passed; the meta-rubric says the rubric is defective because C1 would also pass `def f(): pass`."
+    },
+    {
+      "caseId": "P2",
+      "prompt": "Explain what a database index is to a junior developer.",
+      "constraints": [
+        "Names the operations an index accelerates",
+        "Does not claim every query gets faster"
+      ],
+      "rubric": [
+        {
+          "id": "C1",
+          "statement": "The explanation is clear and engaging."
+        },
+        {
+          "id": "C2",
+          "statement": "The explanation is technically accurate."
+        }
+      ],
+      "output": "Think of an index like the table of contents in a book — it helps you find what you need faster. Every query you run will be quicker with an index, which is why databases use them everywhere.",
+      "reviewers": [
+        {
+          "id": "A",
+          "scores": {
+            "C1": "PASS",
+            "C2": "FAIL"
+          }
+        },
+        {
+          "id": "B",
+          "scores": {
+            "C1": "PASS",
+            "C2": "PASS"
+          }
+        }
+      ],
+      "shortcutVerdict": "sound",
+      "referenceVerdict": "defective",
+      "referenceDefect": "unmeasurable",
+      "metaVerdict": "defective",
+      "derivedDefect": "unmeasurable",
+      "scores": {
+        "measurability": 0,
+        "coverage": 1,
+        "discrimination": 1,
+        "specificity": 1,
+        "calibration": 1
+      },
+      "fix": {
+        "replace": {
+          "C1": "The explanation names three specific operations an index accelerates (point lookup, range scan, sort-avoidance) and is at most four sentences.",
+          "C2": "No claim contradicts section \"Indexes\" of the database documentation at the URL cited in the prompt."
+        },
+        "add": []
+      },
+      "catches": "The output claims \"every query will be quicker\", which is false. Reviewer A catches it; Reviewer B does not. That disagreement is not the reviewers' fault: \"technically accurate\" has no cited source, so both reviewers are applying a private standard. \"Clear and engaging\" is worse — no source on Earth could resolve it.",
+      "rejectsShortcut": true,
+      "matchesReference": true,
+      "note": "Defective rubric (unmeasurable): at least one dimension is 0. The output claims \"every query will be quicker\", which is false. Reviewer A catches it; Reviewer B does not. That disagreement is not the reviewers' fault: \"technically accurate\" has no cited source, so both reviewers are applying a private standard. \"Clear and engaging\" is worse — no source on Earth could resolve it."
+    },
+    {
+      "caseId": "P3",
+      "prompt": "Write a SQL query to find the top 10 customers by revenue in 2025. Must use a window function.",
+      "constraints": [
+        "Filters to 2025",
+        "Returns top 10 by revenue",
+        "Must use a window function"
+      ],
+      "rubric": [
+        {
+          "id": "C1",
+          "statement": "The query is syntactically valid SQL."
+        },
+        {
+          "id": "C2",
+          "statement": "The query returns the top 10 customers by revenue."
+        }
+      ],
+      "output": "SELECT customer_id, SUM(revenue) AS total\nFROM orders\nWHERE EXTRACT(YEAR FROM placed_at) = 2025\nGROUP BY customer_id\nORDER BY total DESC\nLIMIT 10;\n",
+      "reviewers": [
+        {
+          "id": "A",
+          "scores": {
+            "C1": "PASS",
+            "C2": "PASS"
+          }
+        },
+        {
+          "id": "B",
+          "scores": {
+            "C1": "PASS",
+            "C2": "PASS"
+          }
+        }
+      ],
+      "shortcutVerdict": "sound",
+      "referenceVerdict": "defective",
+      "referenceDefect": "coverage-gap",
+      "metaVerdict": "defective",
+      "derivedDefect": "coverage-gap",
+      "scores": {
+        "measurability": 2,
+        "coverage": 0,
+        "discrimination": 1,
+        "specificity": 2,
+        "calibration": 2
+      },
+      "fix": {
+        "replace": {},
+        "add": [
+          "The query contains a window function (an OVER clause)."
+        ]
+      },
+      "catches": "The output is correct SQL and returns the top 10 customers. It also ignores the third constraint — no window function, just ORDER BY ... LIMIT. Both reviewers pass it, correctly, because the rubric never asks about the window function. The shortcut says the rubric is sound; the meta-rubric says coverage is 0 because a stated constraint is not represented by any criterion.",
+      "rejectsShortcut": true,
+      "matchesReference": true,
+      "note": "Defective rubric (coverage-gap): at least one dimension is 0. The output is correct SQL and returns the top 10 customers. It also ignores the third constraint — no window function, just ORDER BY ... LIMIT. Both reviewers pass it, correctly, because the rubric never asks about the window function. The shortcut says the rubric is sound; the meta-rubric says coverage is 0 because a stated constraint is not represented by any criterion."
+    },
+    {
+      "caseId": "P4",
+      "prompt": "Summarise the attached incident post-mortem in exactly 3 sentences.",
+      "constraints": [
+        "Exactly 3 sentences",
+        "Names the root cause"
+      ],
+      "rubric": [
+        {
+          "id": "C1",
+          "statement": "The summary is concise and captures the key points."
+        }
+      ],
+      "output": "The checkout service experienced elevated latency on 2026-11-02. The incident lasted approximately eight minutes. Service was restored by a rollback.",
+      "reviewers": [
+        {
+          "id": "A",
+          "scores": {
+            "C1": "PASS"
+          }
+        },
+        {
+          "id": "B",
+          "scores": {
+            "C1": "FAIL"
+          }
+        }
+      ],
+      "shortcutVerdict": "sound",
+      "referenceVerdict": "defective",
+      "referenceDefect": "calibration",
+      "metaVerdict": "defective",
+      "derivedDefect": "calibration",
+      "scores": {
+        "measurability": 1,
+        "coverage": 1,
+        "discrimination": 1,
+        "specificity": 1,
+        "calibration": 0
+      },
+      "fix": {
+        "replace": {
+          "C1": "The summary is exactly 3 sentences (count sentence-ending punctuation) and names the root cause from section \"Root cause\" of the post-mortem."
+        },
+        "add": []
+      },
+      "catches": "Reviewer A counts sentences: three of them, so PASS. Reviewer B checks information: three sentences but no root cause named, so FAIL. Both are applying the criterion correctly — \"concise and captures the key points\" means two different things. The disagreement is the defect, not the reviewers. The shortcut says the rubric is sound because one reviewer passed it; the meta-rubric says calibration is 0 because the criterion cannot survive two applications.",
+      "rejectsShortcut": true,
+      "matchesReference": true,
+      "note": "Defective rubric (calibration): at least one dimension is 0. Reviewer A counts sentences: three of them, so PASS. Reviewer B checks information: three sentences but no root cause named, so FAIL. Both are applying the criterion correctly — \"concise and captures the key points\" means two different things. The disagreement is the defect, not the reviewers. The shortcut says the rubric is sound because one reviewer passed it; the meta-rubric says calibration is 0 because the criterion cannot survive two applications."
+    }
+  ],
+  "checks": [
+    {
+      "caseId": "P1",
+      "shortcut": "sound",
+      "reference": "defective",
+      "meta": "defective",
+      "derivedDefect": "vacuous",
+      "referenceDefect": "vacuous",
+      "rejectsShortcut": true,
+      "matchesReference": true,
+      "defectMatches": true
+    },
+    {
+      "caseId": "P2",
+      "shortcut": "sound",
+      "reference": "defective",
+      "meta": "defective",
+      "derivedDefect": "unmeasurable",
+      "referenceDefect": "unmeasurable",
+      "rejectsShortcut": true,
+      "matchesReference": true,
+      "defectMatches": true
+    },
+    {
+      "caseId": "P3",
+      "shortcut": "sound",
+      "reference": "defective",
+      "meta": "defective",
+      "derivedDefect": "coverage-gap",
+      "referenceDefect": "coverage-gap",
+      "rejectsShortcut": true,
+      "matchesReference": true,
+      "defectMatches": true
+    },
+    {
+      "caseId": "P4",
+      "shortcut": "sound",
+      "reference": "defective",
+      "meta": "defective",
+      "derivedDefect": "calibration",
+      "referenceDefect": "calibration",
+      "rejectsShortcut": true,
+      "matchesReference": true,
+      "defectMatches": true
+    }
+  ],
+  "summary": {
+    "total": 4,
+    "sound": 0,
+    "weak": 0,
+    "defective": 4,
+    "rejectsShortcut": 4,
+    "matchesReference": 4,
+    "defectClassMatches": 4,
+    "soundFlag": true
+  }
+}

@@ -1,0 +1,46 @@
+name: deploy
+on:
+  push: { branches: [main] }
+  workflow_dispatch:
+permissions: { contents: read, pages: write, id-token: write }
+concurrency: { group: pages, cancel-in-progress: true }
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: npm }
+      - run: npm ci
+      - name: verify the committed matrix is not stale
+        run: |
+          cp src/generated/matrix.json /tmp/matrix-committed.json
+          npm run review
+          python3 - <<'PY'
+          import json, sys
+          def strip(o):
+              if isinstance(o, dict):
+                  return {k: strip(v) for k, v in o.items() if k not in ('generatedAt', 'buildId')}
+              if isinstance(o, list):
+                  return [strip(x) for x in o]
+              return o
+          committed = strip(json.load(open('/tmp/matrix-committed.json')))
+          fresh = strip(json.load(open('src/generated/matrix.json')))
+          public = strip(json.load(open('public/matrix.json')))
+          if committed != fresh:
+              print('The committed matrix is stale.'); sys.exit(2)
+          if fresh != public:
+              print('src/generated and public disagree.'); sys.exit(2)
+          print('Matrix is up to date.')
+          PY
+      - run: npm run build
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v4
+        with: { path: ./dist }
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment: { name: github-pages, url: '${{ steps.deployment.outputs.page_url }}' }
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
